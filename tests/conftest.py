@@ -46,7 +46,7 @@ def docker_compose_path(project_root):
 def load_yaml():
     """Fixture to load YAML files."""
     def _load_yaml(file_path):
-        with open(file_path, 'r') as f:
+        with open(file_path) as f:
             return yaml.safe_load(f)
     return _load_yaml
 
@@ -94,7 +94,6 @@ def pytest_collection_modifyitems(config, items):
         docker_available = False
 
     skip_docker = pytest.mark.skip(reason="Docker not available")
-    
     for item in items:
         if "docker" in item.keywords and not docker_available:
             item.add_marker(skip_docker)

@@ -1,29 +1,29 @@
 """Integration tests for Loki setup."""
 
+import time
+from pathlib import Path
+
 import pytest
 import requests
 import yaml
-import time
-import os
-from pathlib import Path
 
 
 class TestLokiSetup:
     """Test suite for Loki configuration and deployment."""
-    
+
     LOKI_URL = "http://localhost:23002"
     LOKI_INTERNAL_URL = "http://localhost:3100"
-    
+
     @classmethod
     def setup_class(cls):
         """Set up test class with proper paths."""
         # Get the project root directory
         cls.project_root = Path(__file__).parent.parent.parent
         cls.config_path = cls.project_root / "config" / "loki" / "loki-config.yml"
-    
+
     def test_loki_config_syntax(self):
         """Test that loki-config.yml has valid syntax."""
-        with open(self.config_path, "r") as f:
+        with open(self.config_path) as f:
             config = yaml.safe_load(f)
         
         # Verify required sections exist
