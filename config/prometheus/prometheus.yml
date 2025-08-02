@@ -41,13 +41,18 @@ scrape_configs:
           exporter_type: 'node'
           environment: 'production'
 
-  # cAdvisor for container metrics (placeholder for future story)
+  # cAdvisor for container metrics
   - job_name: 'cadvisor'
     static_configs:
-      - targets: []  # To be populated when cAdvisor is deployed
+      - targets: ['cadvisor:8080']
         labels:
           exporter_type: 'container'
           environment: 'production'
+    metric_relabel_configs:
+      # Drop some high-cardinality metrics that we don't need
+      - source_labels: [__name__]
+        regex: 'container_(network_tcp_usage_total|network_udp_usage_total|tasks_state|cpu_load_average_10s)'
+        action: drop
 
   # LLM Service Exporter (placeholder for future story)
   - job_name: 'llm-service-exporter'
