@@ -1,0 +1,66 @@
+# Global configuration
+global:
+  scrape_interval: 30s         # How frequently to scrape targets
+  evaluation_interval: 30s     # How frequently to evaluate rules
+  # scrape_timeout is set to the global default (10s).
+
+# Alertmanager configuration (placeholder for future)
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - alertmanager:9093
+
+# Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
+rule_files:
+  - "/etc/prometheus/rules/*.yml"
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          instance: 'prometheus'
+          environment: 'production'
+
+  # GPU Exporter (placeholder for future story)
+  - job_name: 'gpu-exporter'
+    static_configs:
+      - targets: []  # To be populated when GPU exporter is deployed
+        labels:
+          exporter_type: 'gpu'
+          environment: 'production'
+
+  # Node Exporter (placeholder for future story)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: []  # To be populated when node exporter is deployed
+        labels:
+          exporter_type: 'node'
+          environment: 'production'
+
+  # cAdvisor for container metrics (placeholder for future story)
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: []  # To be populated when cAdvisor is deployed
+        labels:
+          exporter_type: 'container'
+          environment: 'production'
+
+  # LLM Service Exporter (placeholder for future story)
+  - job_name: 'llm-service-exporter'
+    static_configs:
+      - targets: []  # To be populated when LLM service exporter is deployed
+        labels:
+          exporter_type: 'llm-service'
+          environment: 'production'
+
+  # vLLM Exporter (placeholder for future story)
+  - job_name: 'vllm-exporter'
+    static_configs:
+      - targets: []  # To be populated when vLLM exporter is deployed
+        labels:
+          exporter_type: 'vllm'
+          environment: 'production'
