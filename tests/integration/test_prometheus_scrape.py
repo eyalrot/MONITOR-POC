@@ -35,7 +35,9 @@ class TestPrometheusConfiguration:
         # Verify global settings
         global_config = config["global"]
         assert global_config.get("scrape_interval") == "30s", "Scrape interval should be 30s"
-        assert global_config.get("evaluation_interval") == "30s", "Evaluation interval should be 30s"
+        assert (
+            global_config.get("evaluation_interval") == "30s"
+        ), "Evaluation interval should be 30s"
 
     def test_scrape_interval_configuration(self, prometheus_config_path):
         """Test that scrape intervals are properly configured"""
@@ -69,7 +71,8 @@ class TestPrometheusConfiguration:
 
         # Find prometheus job in active targets
         prometheus_targets = [
-            target for target in targets_data["data"]["activeTargets"]
+            target
+            for target in targets_data["data"]["activeTargets"]
             if target["labels"]["job"] == "prometheus"
         ]
 

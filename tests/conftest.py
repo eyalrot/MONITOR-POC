@@ -48,6 +48,7 @@ def load_yaml():
     def _load_yaml(file_path):
         with open(file_path) as f:
             return yaml.safe_load(f)
+
     return _load_yaml
 
 
@@ -57,6 +58,7 @@ def mock_env(monkeypatch):
     def _mock_env(**kwargs):
         for key, value in kwargs.items():
             monkeypatch.setenv(key, str(value))
+
     return _mock_env
 
 
@@ -87,6 +89,7 @@ def pytest_collection_modifyitems(config, items):
     """Automatically skip Docker tests if Docker is not available."""
     try:
         import docker
+
         client = docker.from_env()
         client.ping()
         docker_available = True
