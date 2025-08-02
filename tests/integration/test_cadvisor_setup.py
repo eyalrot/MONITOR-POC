@@ -1,6 +1,5 @@
 """Integration tests for cAdvisor setup."""
 
-import time
 from pathlib import Path
 
 import pytest
