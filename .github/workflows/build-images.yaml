@@ -1,0 +1,161 @@
+name: Build Docker Images
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'exporters/**'
+      - 'docker/**'
+      - '.github/workflows/build-images.yaml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'exporters/**'
+      - 'docker/**'
+      - '.github/workflows/build-images.yaml'
+  workflow_dispatch:
+  schedule:
+    # Weekly builds to get latest base image updates
+    - cron: '0 2 * * 1'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository_owner }}/llm-monitor
+
+jobs:
+  build-base:
+    name: Build Base Exporter Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/exporter-base
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push base image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./exporters/base
+          file: ./exporters/base/Dockerfile.base
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-exporters:
+    name: Build Exporter Images
+    needs: build-base
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        exporter:
+          - name: node
+            context: ./exporters/node
+          - name: gpu
+            context: ./exporters/gpu
+          - name: container
+            context: ./exporters/container
+          - name: litellm
+            context: ./exporters/litellm
+          - name: vllm
+            context: ./exporters/vllm
+          - name: langfuse
+            context: ./exporters/langfuse
+          - name: mock
+            context: ./exporters/mock
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.exporter.name }}-exporter
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Check if Dockerfile exists
+        id: dockerfile_check
+        run: |
+          if [ -f "${{ matrix.exporter.context }}/Dockerfile" ]; then
+            echo "dockerfile_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "dockerfile_exists=false" >> $GITHUB_OUTPUT
+            echo "::warning file=${{ matrix.exporter.context }}/Dockerfile::Dockerfile not found for ${{ matrix.exporter.name }} exporter"
+          fi
+
+      - name: Build and push exporter image
+        if: steps.dockerfile_check.outputs.dockerfile_exists == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.exporter.context }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BASE_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/exporter-base:${{ github.sha }}
+
+  build-summary:
+    name: Build Summary
+    needs: [build-base, build-exporters]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Summary
+        run: |
+          echo "## Docker Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Base Image: ${{ needs.build-base.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Exporters: ${{ needs.build-exporters.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Images Built:" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/exporter-base\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/node-exporter\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/gpu-exporter\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/container-exporter\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/litellm-exporter\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/vllm-exporter\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/langfuse-exporter\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/mock-exporter\`" >> $GITHUB_STEP_SUMMARY

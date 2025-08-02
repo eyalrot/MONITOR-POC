@@ -169,9 +169,14 @@ pytest tests/e2e/
 
 1. Fork the repository
 2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+3. Install pre-commit hooks:
+   ```bash
+   pip install pre-commit
+   pre-commit install
+   ```
+4. Commit your changes (pre-commit will run automatically)
+5. Push to the branch
+6. Create a Pull Request
 
 ## Security
 
