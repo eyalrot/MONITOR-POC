@@ -45,6 +45,7 @@ def docker_compose_path(project_root):
 @pytest.fixture
 def load_yaml():
     """Fixture to load YAML files."""
+
     def _load_yaml(file_path):
         with open(file_path) as f:
             return yaml.safe_load(f)
@@ -55,6 +56,7 @@ def load_yaml():
 @pytest.fixture
 def mock_env(monkeypatch):
     """Fixture to mock environment variables."""
+
     def _mock_env(**kwargs):
         for key, value in kwargs.items():
             monkeypatch.setenv(key, str(value))
